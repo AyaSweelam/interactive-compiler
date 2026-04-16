@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Interactive Compiler</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="page">
+    <div class="container">
+      <div class="header">
+        <div>
+          <h1>Interactive Compiler</h1>
+          <p>Run code live and send input step by step</p>
+        </div>
+        <div class="badge">Multi-Language Interactive</div>
+      </div>
+
+      <div class="main-grid">
+        <div class="panel editor-panel">
+          <div class="panel-header">
+            <span>Code Editor</span>
+          </div>
+
+          <label for="language" class="label">Language</label>
+          <select id="language">
+            <option value="python">Python</option>
+            <option value="javascript">JavaScript</option>
+            <option value="cpp">C++</option>
+            <option value="java">Java</option>
+            <option value="go">Go</option>
+          </select>
+
+          <br><br>
+
+          <label for="code" class="label">Code</label>
+          <textarea id="code" placeholder="Write your code here..."></textarea>
+
+          <div class="actions">
+            <button id="runBtn" type="button" class="btn primary">Run</button>
+            <button id="stopBtn" type="button" class="btn danger">Stop</button>
+          </div>
+        </div>
+
+        <div class="right-side">
+          <div class="panel output-panel">
+            <div class="panel-header">
+              <span>Terminal Output</span>
+            </div>
+            <pre id="output"></pre>
+          </div>
+
+          <div class="panel input-panel">
+            <div class="panel-header">
+              <span>Send Input</span>
+            </div>
+
+            <label for="input" class="label">Input</label>
+            <div class="input-row">
+              <input id="input" type="text" placeholder="Type input here..." autocomplete="off" />
+              <button id="sendBtn" type="button" class="btn secondary">Send</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

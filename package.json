@@ -1,0 +1,15 @@
+{
+  "name": "interactive-compiler",
+  "version": "1.0.0",
+  "description": "Interactive online compiler with WebSocket and Docker",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "runner": "node runner.js"
+  },
+  "dependencies": {
+    "express": "^5.2.1",
+    "uuid": "^13.0.0",
+    "ws": "^8.20.0"
+  }
+}
