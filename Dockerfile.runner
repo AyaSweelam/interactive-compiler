@@ -1,0 +1,16 @@
+FROM node:20
+
+WORKDIR /app
+
+# install modern docker cli
+RUN apt-get update && apt-get install -y curl && \
+    curl -fsSL https://get.docker.com | sh
+
+COPY package*.json ./
+RUN npm install
+
+COPY . .
+
+EXPOSE 5000
+
+CMD ["node", "runner.js"]

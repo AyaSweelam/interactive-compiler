@@ -7,64 +7,105 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div class="page">
-    <div class="container">
-      <div class="header">
-        <div>
-          <h1>Interactive Compiler</h1>
-          <p>Run code live and send input step by step</p>
-        </div>
-        <div class="badge">Multi-Language Interactive</div>
+
+  <!-- AUTH OVERLAY -->
+  <div id="authBox" class="auth-overlay">
+    <div class="auth-card">
+      <h2>Welcome 👋</h2>
+      <p>Login or signup to save your projects</p>
+
+      <div class="auth-tabs">
+        <button id="showLogin" class="tab active">Login</button>
+        <button id="showSignup" class="tab">Signup</button>
       </div>
 
-      <div class="main-grid">
-        <div class="panel editor-panel">
-          <div class="panel-header">
-            <span>Code Editor</span>
-          </div>
-
-          <label for="language" class="label">Language</label>
-          <select id="language">
-            <option value="python">Python</option>
-            <option value="javascript">JavaScript</option>
-            <option value="cpp">C++</option>
-            <option value="java">Java</option>
-            <option value="go">Go</option>
-          </select>
-
-          <br><br>
-
-          <label for="code" class="label">Code</label>
-          <textarea id="code" placeholder="Write your code here..."></textarea>
-
-          <div class="actions">
-            <button id="runBtn" type="button" class="btn primary">Run</button>
-            <button id="stopBtn" type="button" class="btn danger">Stop</button>
-          </div>
-        </div>
-
-        <div class="right-side">
-          <div class="panel output-panel">
-            <div class="panel-header">
-              <span>Terminal Output</span>
-            </div>
-            <pre id="output"></pre>
-          </div>
-
-          <div class="panel input-panel">
-            <div class="panel-header">
-              <span>Send Input</span>
-            </div>
-
-            <label for="input" class="label">Input</label>
-            <div class="input-row">
-              <input id="input" type="text" placeholder="Type input here..." autocomplete="off" />
-              <button id="sendBtn" type="button" class="btn secondary">Send</button>
-            </div>
-          </div>
-        </div>
+      <div id="loginForm" class="auth-form">
+        <input id="loginEmail" type="email" placeholder="Email" />
+        <input id="loginPassword" type="password" placeholder="Password" />
+        <div id="loginError" class="auth-error"></div>
+        <button id="loginBtn" class="btn primary full">Login</button>
       </div>
+
+      <div id="signupForm" class="auth-form hidden">
+        <input id="signupUsername" type="text" placeholder="Username" />
+        <input id="signupEmail" type="email" placeholder="Email" />
+        <input id="signupPassword" type="password" placeholder="Password" />
+        <div id="signupError" class="auth-error"></div>
+        <button id="signupBtn" class="btn primary full">Create Account</button>
+      </div>
+
+      <p class="auth-note">You can run code without an account. Login only needed to save projects.</p>
+      <button id="skipAuthBtn" class="btn ghost full">Continue without login →</button>
     </div>
+  </div>
+
+  <!-- APP -->
+  <div class="layout hidden" id="app">
+
+    <aside class="sidebar">
+      <div class="sidebar-user">
+        <span id="userInfo" class="user-name"></span>
+        <button id="logoutBtn" class="btn danger small hidden">Logout</button>
+        <button id="authTriggerBtn" class="btn secondary small">Login</button>
+      </div>
+
+      <div class="sidebar-top">
+        <h2>My Projects</h2>
+        <p id="currentProjectTitle" class="current-project-title">No project selected</p>
+        <button id="createProjectBtn" class="btn primary sidebar-btn">+ New Project</button>
+        <button id="saveBtn" class="btn secondary sidebar-btn">💾 Save Project</button>
+      </div>
+
+      <div id="projectsList" class="projects-list"></div>
+    </aside>
+
+    <main class="page">
+      <div class="container">
+
+        <div class="header">
+          <div>
+            <h1>Interactive Compiler</h1>
+            <p>Run code live and send input step by step</p>
+          </div>
+          <div class="badge">Multi-Language</div>
+        </div>
+
+        <div class="main-grid">
+
+          <section class="panel">
+            <div class="panel-header">Code Editor</div>
+            <select id="language">
+              <option value="python">🐍 Python</option>
+              <option value="javascript">🟨 JavaScript</option>
+              <option value="cpp">⚙️ C++</option>
+              <option value="java">☕ Java</option>
+              <option value="go">🐹 Go</option>
+            </select>
+            <textarea id="code" placeholder="Write your code here..."></textarea>
+            <div class="actions">
+              <button id="runBtn" class="btn primary">▶ Run</button>
+              <button id="stopBtn" class="btn danger">■ Stop</button>
+            </div>
+          </section>
+
+          <div class="right-col">
+            <section class="panel">
+              <div class="panel-header">Output</div>
+              <pre id="output">[Waiting to run...]</pre>
+            </section>
+
+            <section class="panel">
+              <div class="panel-header">Send Input</div>
+              <div class="input-row">
+                <input id="input" type="text" placeholder="Type input and press Enter..." />
+                <button id="sendBtn" class="btn secondary">Send</button>
+              </div>
+            </section>
+          </div>
+
+        </div>
+      </div>
+    </main>
   </div>
 
   <script src="app.js"></script>

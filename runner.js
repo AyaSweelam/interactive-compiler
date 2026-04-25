@@ -5,20 +5,53 @@ const wss = new WebSocket.Server({ port: 5000 });
 
 console.log("Runner service running on ws://localhost:5000");
 
-function getContainerName(sessionId) {
-  return `runner_${sessionId.replace(/[^a-zA-Z0-9_.-]/g, "_")}`;
+function forceKillProcess(entry) {
+  if (!entry || !entry.process) return;
+
+  try {
+    entry.process.kill();
+  } catch (_) {}
 }
 
-function forceRemoveContainer(sessionId) {
-  const containerName = getContainerName(sessionId);
-  const killer = spawn("docker", ["rm", "-f", containerName]);
+function isRealOutput(text) {
+  if (!text || !text.trim()) return false;
 
-  killer.on("error", () => {});
+  const dockerNoise = [
+    "Unable to find image",
+    "Pulling from",
+    "Pulling fs layer",
+    "Waiting",
+    "Verifying Checksum",
+    "Download complete",
+    "Already exists",
+    "Pull complete",
+    "Digest:",
+    "Status:",
+    "Downloaded newer image",
+    "See 'docker run --help'",
+    "See 'docker run --help'.",
+    "Pulling",
+    "Download",
+    "extracting",
+    "layer",
+    "sha256:",
+    "library/",
+    "docker.io/"
+  ];
+
+  return !dockerNoise.some((item) => text.includes(item));
 }
 
-function buildDockerProcess(sessionId, language, code) {
-  const containerName = getContainerName(sessionId);
+function sendCleanOutput(ws, sessionId, text) {
+  if (!isRealOutput(text)) return;
 
+  ws.send(JSON.stringify({
+    sessionId,
+    data: text
+  }));
+}
+
+function buildDockerProcess(language, code) {
   if (language === "python") {
     return spawn(
       "docker",
@@ -26,8 +59,6 @@ function buildDockerProcess(sessionId, language, code) {
         "run",
         "-i",
         "--rm",
-        "--name",
-        containerName,
         "--network",
         "none",
         "--memory",
@@ -56,8 +87,6 @@ function buildDockerProcess(sessionId, language, code) {
         "run",
         "-i",
         "--rm",
-        "--name",
-        containerName,
         "--network",
         "none",
         "--memory",
@@ -85,8 +114,6 @@ function buildDockerProcess(sessionId, language, code) {
         "run",
         "-i",
         "--rm",
-        "--name",
-        containerName,
         "--network",
         "none",
         "--memory",
@@ -117,8 +144,6 @@ g++ main.cpp -o main && chmod +x main && ./main`
         "run",
         "-i",
         "--rm",
-        "--name",
-        containerName,
         "--network",
         "none",
         "--memory",
@@ -132,7 +157,7 @@ g++ main.cpp -o main && chmod +x main && ./main`
         "/work:exec,mode=1777",
         "-e",
         "HOME=/work",
-        "openjdk:17",
+        "eclipse-temurin:17-jdk",
         "sh",
         "-c",
         `cd /work && cat > Main.java <<'EOF'
@@ -151,8 +176,6 @@ javac Main.java && java Main`
         "run",
         "-i",
         "--rm",
-        "--name",
-        containerName,
         "--network",
         "none",
         "--memory",
@@ -164,18 +187,20 @@ javac Main.java && java Main`
         "--read-only",
         "--tmpfs",
         "/work:exec,mode=1777",
-        "golang:1.20",
-        "sh",
-        "-c",
-        `export HOME=/work
-export TMPDIR=/work
-export GOCACHE=/work/.cache
-export GOMODCACHE=/work/pkg/mod
-cd /work
+        "golang:1.20-bullseye",
+        "bash",
+        "-lc",
+        `mkdir -p /work/.cache /work/pkg/mod && \
+export HOME=/work && \
+export TMPDIR=/work && \
+export GOCACHE=/work/.cache && \
+export GOMODCACHE=/work/pkg/mod && \
+export PATH=/usr/local/go/bin:$PATH && \
+cd /work && \
 cat > main.go <<'EOF'
 ${code}
 EOF
-go run main.go`
+/usr/local/go/bin/go run main.go`
       ],
       { stdio: ["pipe", "pipe", "pipe"] }
     );
@@ -210,12 +235,11 @@ wss.on("connection", (ws) => {
         if (processes.has(sessionId)) {
           const oldEntry = processes.get(sessionId);
           oldEntry.reason = "replaced";
-          oldEntry.process.kill();
-          forceRemoveContainer(sessionId);
+          forceKillProcess(oldEntry);
           processes.delete(sessionId);
         }
 
-        const process = buildDockerProcess(sessionId, language, code);
+        const process = buildDockerProcess(language, code);
 
         if (!process) {
           ws.send(JSON.stringify({
@@ -238,27 +262,20 @@ wss.on("connection", (ws) => {
           if (!current) return;
 
           current.reason = "timeout";
-          current.process.kill();
-          forceRemoveContainer(sessionId);
+          forceKillProcess(current);
 
           ws.send(JSON.stringify({
             sessionId,
             data: "\n[Process timed out]\n"
           }));
-        }, 10000);
+        }, 30000);
 
         process.stdout.on("data", (chunk) => {
-          ws.send(JSON.stringify({
-            sessionId,
-            data: chunk.toString()
-          }));
+          sendCleanOutput(ws, sessionId, chunk.toString());
         });
 
         process.stderr.on("data", (chunk) => {
-          ws.send(JSON.stringify({
-            sessionId,
-            data: chunk.toString()
-          }));
+          sendCleanOutput(ws, sessionId, chunk.toString());
         });
 
         process.on("error", (err) => {
@@ -292,10 +309,9 @@ wss.on("connection", (ws) => {
 
           processes.delete(sessionId);
         });
-      }
-
-      else if (type === "input") {
+      } else if (type === "input") {
         const entry = processes.get(sessionId);
+
         if (entry) {
           entry.process.stdin.write((input ?? "") + "\n");
         } else {
@@ -304,24 +320,19 @@ wss.on("connection", (ws) => {
             data: "[No running process]\n"
           }));
         }
-      }
-
-      else if (type === "stop") {
+      } else if (type === "stop") {
         const entry = processes.get(sessionId);
 
         if (entry) {
           entry.reason = "stop";
-          entry.process.kill();
-          forceRemoveContainer(sessionId);
+          forceKillProcess(entry);
         } else {
           ws.send(JSON.stringify({
             sessionId,
             data: "[No running process to stop]\n"
           }));
         }
-      }
-
-      else {
+      } else {
         ws.send(JSON.stringify({
           sessionId,
           data: "Runner Error: Unknown message type\n"
@@ -338,9 +349,8 @@ wss.on("connection", (ws) => {
   ws.on("close", () => {
     console.log("App server disconnected from runner");
 
-    for (const [sessionId, entry] of processes) {
-      entry.process.kill();
-      forceRemoveContainer(sessionId);
+    for (const [, entry] of processes) {
+      forceKillProcess(entry);
       clearTimeout(entry.timeoutId);
     }
 
