@@ -1,10 +1,11 @@
+FROM docker:27-cli AS dockercli
+
 FROM node:20
 
 WORKDIR /app
 
-# install modern docker cli
-RUN apt-get update && apt-get install -y curl && \
-    curl -fsSL https://get.docker.com | sh
+# Copy Docker CLI only
+COPY --from=dockercli /usr/local/bin/docker /usr/local/bin/docker
 
 COPY package*.json ./
 RUN npm install

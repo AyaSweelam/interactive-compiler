@@ -1,7 +1,5 @@
 const jwt = require("jsonwebtoken");
 
-const JWT_SECRET = "super_secret_key_change_this";
-
 function auth(req, res, next) {
   try {
     const authHeader = req.headers.authorization;
@@ -11,7 +9,7 @@ function auth(req, res, next) {
     }
 
     const token = authHeader.split(" ")[1];
-    const decoded = jwt.verify(token, JWT_SECRET);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
     req.userId = decoded.userId;
     next();
